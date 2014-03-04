@@ -59,6 +59,8 @@ abstract class CMB_Field {
 
 		$this->description = ! empty( $this->args['desc'] ) ? $this->args['desc'] : '';
 
+		$this->logic = ! empty( $this->args['logic'] ) ? $this->args['logic'] : '';
+
 	}
 
 	/**
@@ -70,6 +72,11 @@ abstract class CMB_Field {
 
 		if ( isset( $this->args['sortable'] ) && $this->args['sortable'] )
 			wp_enqueue_script( 'jquery-ui-sortable' );
+
+		if ( isset( $this->args['logic'] ) && $this->args['logic'] ) {
+			wp_enqueue_script( 'cmb-logic', trailingslashit( CMB_URL ) . 'js/cmb.logic.js', array( 'jquery' ) );
+			wp_localize_script( 'cmb-logic', 'fieldLogic', array('id' => $this->args['id'], 'logic' => $this->args['logic']));
+		}
 
 	}
 
@@ -308,6 +315,45 @@ abstract class CMB_Field {
 
 	}
 
+	public function logic() {
+
+		if($this->logic) {
+
+			$field = $this->args['id'];
+			$logic = $this->args['logic'];
+			$rules = $logic['rules'];
+			$condition = $logic['condition'] ? $logic['condition'] : 'AND';
+
+			if(!$rules)
+				return;
+
+			?>
+			
+			<script type="text/javascript">
+
+			jQuery(document).ready(function($) {
+				$('#<?php echo $this->get_the_id_attr(); ?>').cmbLogic({
+			 		rules : [ 
+			 		<?php foreach($rules as $rule) : ?> 
+			 			{
+			 				field: '#<?php echo $rule['field']; ?>-cmb-field-0',
+			 				operator: '<?php echo $rule['operator']; ?>', 
+			 				<?php if($rule['value']) { ?> value: '<?php echo $rule['value']; ?>' <?php } ?> 
+			 			}, 
+			 		<?php endforeach; ?> 
+			 		],
+			 		condition: 'AND' // accepted values: AND, OR
+			 	});
+			});	
+
+			</script>
+
+			<?php
+
+		}
+
+	}
+
 	public function display() {
 
 		// if there are no values and it's not repeateble, we want to do one with empty string
@@ -361,6 +407,8 @@ abstract class CMB_Field {
 			<button class="button repeat-field"><?php esc_html_e( 'Add New', 'cmb' ); ?></button>
 
 		<?php }
+
+		$this->logic();
 
 	}
 
